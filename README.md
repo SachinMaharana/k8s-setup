@@ -219,16 +219,21 @@ nc -vn 10.240.0.40 6443
 
 ## Master nodes
 
-# I'm on ETCD $HOST0
+### I'm on ETCD $HOST0
+```
 export CONTROL_PLANE="ubuntu@10.240.0.10"
 ssh ${CONTROL_PLANE}
 mkdir -p /etc/kubernetes/pki/etcd/
+```
 
-# Exit ssh and copy files from $HOST0
+### Exit ssh and copy files from $HOST0
+```
 scp /etc/kubernetes/pki/etcd/ca.crt "${CONTROL_PLANE}":
 scp /etc/kubernetes/pki/apiserver-etcd-client.crt "${CONTROL_PLANE}":
 scp /etc/kubernetes/pki/apiserver-etcd-client.key "${CONTROL_PLANE}":
+```
 
+```
 cp ca.crt /etc/kubernetes/pki/etcd/ca.crt
 
 cp apiserver-etcd-client.crt /etc/kubernetes/pki/apiserver-etcd-client.crt
@@ -266,3 +271,4 @@ kubeadm token create --print-join-command --certificate-key cf7b996798e0f7972065
 
 kubeadm join 54.82.17.108:6443 --token tdu5sw.7qltq4reytkaoi4r --discovery-token-ca-cert-hash sha256:a97ce8d321741674763713f819c16dea7ec71c2c13d423c140f1a2161f0837b6 --control-plane --certificate-key cf7b996798e0f7972065a258c60dfbbcdbed4a1885ff847905a9bf7d9ffcb437
 z
+```
