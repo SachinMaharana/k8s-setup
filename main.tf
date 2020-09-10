@@ -235,6 +235,13 @@ resource "local_file" "kube_inventory" {
     list_master = slice(aws_instance.master.*.public_ip, 0, var.master_count),
     list_worker = slice(aws_instance.worker.*.public_ip, 0, var.worker_count)
     list_etcd = slice(aws_instance.etcd.*.public_ip, 0, var.etcd_count)
+    list_lb = slice(aws_instance.lb.*.public_ip, 0, var.lb_count),
+
+    list_master_private = slice(aws_instance.master.*.private_ip, 0, var.master_count)
+    list_etcd_private = slice(aws_instance.etcd.*.private_ip, 0, var.etcd_count)
+    list_worker_private = slice(aws_instance.worker.*.private_ip, 0, var.worker_count)
+    list_lb_private = slice(aws_instance.lb.*.private_ip, 0, var.lb_count)
+
   })
   filename = "ips"
 }
