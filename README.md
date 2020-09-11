@@ -3,8 +3,8 @@
 
 ## Add AWS Access and Secret Key in .envrc file.
 ```
-export AWS_ACCESS_KEY_ID=AKIARP7BIRQM6K2QEAWZ
-export AWS_SECRET_ACCESS_KEY=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
+export AWS_ACCESS_KEY_ID=AKIARP7BIRQM6KWZ
+export AWS_SECRET_ACCESS_KEY=fmM7HcmtTDQB90eeAqy4NoFik6qliJwAJ3
 
 direnv allow
 ```
