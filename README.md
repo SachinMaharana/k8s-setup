@@ -236,6 +236,8 @@ scp /etc/kubernetes/pki/apiserver-etcd-client.crt "${CONTROL_PLANE}":
 scp /etc/kubernetes/pki/apiserver-etcd-client.key "${CONTROL_PLANE}":
 ```
 
+---
+
 ```
 cp ca.crt /etc/kubernetes/pki/etcd/ca.crt
 
@@ -275,45 +277,20 @@ kubeadm token create --print-join-command --certificate-key cf7b996798e0f7972065
 kubeadm join 54.82.17.108:6443 --token tdu5sw.7qltq4reytkaoi4r --discovery-token-ca-cert-hash sha256:a97ce8d321741674763713f819c16dea7ec71c2c13d423c140f1a2161f0837b6 --control-plane --certificate-key cf7b996798e0f7972065a258c60dfbbcdbed4a1885ff847905a9bf7d9ffcb437
 z
 ```
+---
 
 
-
-
-Your Kubernetes control-plane has initialized successfully!
-
-To start using your cluster, you need to run the following as a regular user:
-
-  mkdir -p $HOME/.kube
-  sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
-  sudo chown $(id -u):$(id -g) $HOME/.kube/config
-
-You should now deploy a pod network to the cluster.
-Run "kubectl apply -f [podnetwork].yaml" with one of the options listed at:
-  https://kubernetes.io/docs/concepts/cluster-administration/addons/
-
-You can now join any number of the control-plane node running the following command on each as root:
-
-  kubeadm join 3.219.247.75:6443 --token sojwbl.s1ron82casb358yc \
-    --discovery-token-ca-cert-hash sha256:97018e0f41ac29aa96c206f3ee8070c1fcca53c79193092103977aca7efff419 \
-    --control-plane --certificate-key da603f366d021c802d7103be629911593100af661256ffe8c81244d4a1efff75
-
-Please note that the certificate-key gives access to cluster sensitive data, keep it secret!
-As a safeguard, uploaded-certs will be deleted in two hours; If necessary, you can use
-"kubeadm init phase upload-certs --upload-certs" to reload certs afterward.
-
-Then you can join any number of worker nodes by running the following on each as root:
-
-kubeadm join 3.219.247.75:6443 --token sojwbl.s1ron82casb358yc \
-    --discovery-token-ca-cert-hash sha256:97018e0f41ac29aa96c206f3ee8070c1fcca53c79193092103977aca7efff419
-
+```
 kubectl apply -f https://docs.projectcalico.org/v3.15/manifests/calico.yaml
 
 kubectl create deploy nginx --image=nginx:1.10
+```
 
 
 ---
 
 
+```
 ETCDCTL_API=3 etcdctl --endpoints $ENDPOINT snapshot save snapshotdb
 
 docker run --rm -it \
@@ -353,3 +330,4 @@ ETCDCTL_API=3 etcdctl --write-out=table snapshot status current.db \
 find / -name "whats.db"
 
 docker cp 788569c55bea:/snapshots.db snapshots.db
+```
