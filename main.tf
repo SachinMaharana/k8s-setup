@@ -165,7 +165,7 @@ resource "aws_key_pair" "ssh" {
 resource "aws_instance" "master" {
   count                       = var.master_count
   associate_public_ip_address = true
-  ami                         = data.aws_ami.ubuntu.id
+  ami                         = var.centos_enable ? var.centos : data.aws_ami.ubuntu.id
   key_name                    = aws_key_pair.ssh.key_name
   vpc_security_group_ids      = [aws_security_group.kubernetes.id]
   instance_type               = "t3.medium"
@@ -181,7 +181,7 @@ resource "aws_instance" "master" {
 resource "aws_instance" "worker" {
   count                       = var.worker_count
   associate_public_ip_address = true
-  ami                         = data.aws_ami.ubuntu.id
+  ami                         = var.centos_enable ? var.centos : data.aws_ami.ubuntu.id
   key_name                    = aws_key_pair.ssh.key_name
   vpc_security_group_ids      = [aws_security_group.kubernetes.id]
   instance_type               = "t3.medium"
@@ -197,7 +197,7 @@ resource "aws_instance" "worker" {
 resource "aws_instance" "etcd" {
   count                       = var.etcd_count
   associate_public_ip_address = true
-  ami                         = data.aws_ami.ubuntu.id
+  ami                         = var.centos_enable ? var.centos : data.aws_ami.ubuntu.id
   key_name                    = aws_key_pair.ssh.key_name
   vpc_security_group_ids      = [aws_security_group.kubernetes.id]
   instance_type               = "t3.medium"
@@ -214,7 +214,7 @@ resource "aws_instance" "etcd" {
 resource "aws_instance" "lb" {
   count                       = var.lb_count
   associate_public_ip_address = true
-  ami                         = data.aws_ami.ubuntu.id
+  ami                         = var.centos_enable ? var.centos : data.aws_ami.ubuntu.id
   key_name                    = aws_key_pair.ssh.key_name
   vpc_security_group_ids      = [aws_security_group.kubernetes.id]
   instance_type               = "t3.small"

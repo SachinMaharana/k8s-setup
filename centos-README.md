@@ -1,6 +1,6 @@
 # Setup HA Kubernetes Cluster ( Stacked Cluster ) : 30 mins 
 
-For Centos Nodes, refer centos-README.md
+For Ubuntu Nodes, refer README.md
 
 ---
 
@@ -26,19 +26,19 @@ ssh -A ubuntu@3.216.23.160
 ## On All Nodes( Master,ETCD, Worker )
 ```
 sudo su -
-apt-get update && apt-get install -y apt-transport-https ca-certificates curl software-properties-common
+
+yum install -y yum-utils device-mapper-persistent-data lvm2
+
+yum-config-manager --add-repo \
+  https://download.docker.com/linux/centos/docker-ce.repo
 
 
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -
+yum update -y && yum install -y \
+  containerd.io-1.2.13 \
+  docker-ce-19.03.11 \
+  docker-ce-cli-19.03.11
 
-add-apt-repository \
-  "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
-  $(lsb_release -cs) \
-  stable"
-
-apt-get update && apt-get install -y docker-ce=18.06.2~ce~3-0~ubuntu
-
-
+mkdir /etc/docker
 
 cat > /etc/docker/daemon.json <<EOF
 {
@@ -47,7 +47,10 @@ cat > /etc/docker/daemon.json <<EOF
   "log-opts": {
     "max-size": "100m"
   },
-  "storage-driver": "overlay2"
+  "storage-driver": "overlay2",
+  "storage-opts": [
+    "overlay2.override_kernel_check=true"
+  ]
 }
 EOF
 
@@ -55,17 +58,26 @@ mkdir -p /etc/systemd/system/docker.service.d
 
 systemctl daemon-reload && systemctl restart docker
 
+systemctl enable docker && systemctl status docker
 
-apt-get update -y
-curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
-
-cat <<EOF | tee /etc/apt/sources.list.d/kubernetes.list
-deb https://apt.kubernetes.io/ kubernetes-xenial main
+cat <<EOF | sudo tee /etc/yum.repos.d/kubernetes.repo
+[kubernetes]
+name=Kubernetes
+baseurl=https://packages.cloud.google.com/yum/repos/kubernetes-el7-\$basearch
+enabled=1
+gpgcheck=1
+repo_gpgcheck=1
+gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+exclude=kubelet kubeadm kubectl
 EOF
 
-apt-get update -y && apt-get install -y kubelet kubeadm kubectl
+setenforce 0
 
-apt-mark hold kubelet kubeadm kubectl
+sed -i 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config
+
+yum install -y kubelet kubeadm kubectl --disableexcludes=kubernetes
+
+sudo systemctl enable --now kubelet
 ```
 
 ## ETCD External Nodes
@@ -94,7 +106,7 @@ export HOST2=10.240.0.32
 mkdir -p /tmp/${HOST0}/ /tmp/${HOST1}/ /tmp/${HOST2}/
 
 ETCDHOSTS=(${HOST0} ${HOST1} ${HOST2})
-NAMES=("ip-10-240-0-30" "ip-10-240-0-31" "ip-10-240-0-32")
+NAMES=("ip-10-240-0-30.ec2.internal" "ip-10-240-0-31.ec2.internal" "ip-10-240-0-32.ec2.internal")
 
 for i in "${!ETCDHOSTS[@]}"; do
 HOST=${ETCDHOSTS[$i]}
@@ -154,9 +166,12 @@ kubeadm init phase certs apiserver-etcd-client --config=/tmp/${HOST0}/kubeadmcfg
 find /tmp/${HOST2} -name ca.key -type f -delete
 find /tmp/${HOST1} -name ca.key -type f -delete
 
+export HOST0=10.240.0.30
+export HOST1=10.240.0.31
+export HOST2=10.240.0.32
 
 # etcd-2
-USER=ubuntu
+USER=centos
 HOST=${HOST1}
 scp -r /tmp/${HOST}/* ${USER}@${HOST}:
 ssh ${USER}@${HOST}
@@ -166,7 +181,7 @@ chown -R root:root pki
 mv pki /etc/kubernetes/
 
 # etcd-03
-USER=ubuntu
+USER=centos
 HOST=${HOST2}
 scp -r /tmp/${HOST}/* ${USER}@${HOST}:
 ssh ${USER}@${HOST}
@@ -178,8 +193,8 @@ mv pki /etc/kubernetes/
 
 
 kubeadm init phase etcd local --config=/tmp/${HOST0}/kubeadmcfg.yaml
-kubeadm init phase etcd local --config=/home/ubuntu/kubeadmcfg.yaml
-kubeadm init phase etcd local --config=/home/ubuntu/kubeadmcfg.yaml
+kubeadm init phase etcd local --config=/home/centos/kubeadmcfg.yaml
+kubeadm init phase etcd local --config=/home/centos/kubeadmcfg.yaml
 
 Check
 ------
@@ -206,8 +221,8 @@ docker run --rm -it \
 ## Loadbalancer
 
 ```
-apt-get update -y
-apt-get install haproxy -y
+yum update -y
+yum install haproxy -y
 
 vim /etc/haproxy/haproxy.cfg
 
@@ -223,10 +238,14 @@ backend kubernetes-master-nodes
         mode tcp
         balance roundrobin
         option tcp-check
-        server ip-10-240-0-10 10.240.0.10:6443 check fall 3 rise 2
-        server ip-10-240-0-11 10.240.0.11:6443 check fall 3 rise 2
-        server ip-10-240-0-12 10.240.0.12:6443 check fall 3 rise 2
+        server ip-10-240-0-10.ec2.internal 10.240.0.10:6443 check fall 3 rise 2
+        server ip-10-240-0-11.ec2.internal 10.240.0.11:6443 check fall 3 rise 2
+        server ip-10-240-0-12.ec2.internal 10.240.0.12:6443 check fall 3 rise 2
 
+
+setenforce 0
+
+sed -i 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config
 
 systemctl restart haproxy && systemctl status haproxy
 
@@ -237,7 +256,7 @@ nc -vn 10.240.0.40 6443
 
 ### I'm on ETCD $HOST0
 ```
-export CONTROL_PLANE="ubuntu@10.240.0.10"
+export CONTROL_PLANE="centos@10.240.0.10"
 ssh ${CONTROL_PLANE}
 sudo -Es
 mkdir -p /etc/kubernetes/pki/etcd/
@@ -252,6 +271,18 @@ scp /etc/kubernetes/pki/apiserver-etcd-client.key "${CONTROL_PLANE}":
 
 ---
 
+### In all Masters
+
+```
+cat <<EOF | sudo tee /etc/sysctl.d/k8s.conf
+net.bridge.bridge-nf-call-ip6tables = 1
+net.bridge.bridge-nf-call-iptables = 1
+EOF
+sudo sysctl --system
+```
+
+### Master-0
+
 ```
 cp ca.crt /etc/kubernetes/pki/etcd/ca.crt
 
@@ -264,7 +295,7 @@ vim kubeadm-config.yaml
 apiVersion: kubeadm.k8s.io/v1beta2
 kind: ClusterConfiguration
 kubernetesVersion: stable
-controlPlaneEndpoint: "54.82.17.108:6443"
+controlPlaneEndpoint: "3.82.145.151:6443"
 networking:
         podSubnet: "192.168.0.0/16"
 etcd:
@@ -293,6 +324,11 @@ kubeadm token create --print-join-command --certificate-key cf7b996798e0f7972065
 
 kubeadm join 54.82.17.108:6443 --token tdu5sw.7qltq4reytkaoi4r --discovery-token-ca-cert-hash sha256:a97ce8d321741674763713f819c16dea7ec71c2c13d423c140f1a2161f0837b6 --control-plane --certificate-key cf7b996798e0f7972065a258c60dfbbcdbed4a1885ff847905a9bf7d9ffcb437
 z
+
+
+For Worker Node:
+
+kubeadm token create --print-join-command 
 ```
 ---
 
@@ -305,6 +341,8 @@ kubectl create deploy nginx --image=nginx:1.10
 
 
 ---
+
+
 
 
 ```
