@@ -1,10 +1,10 @@
-# Setup HA Kubernetes Cluster ( Stacked Cluster )
+# Setup HA Kubernetes Cluster ( Stacked Cluster ) : 30 mins 
 
 ```
 terraform apply --auto-approve
 ```
 
-Refer ips file with public and private ips of the create instances.
+Refer `ips` file with public and private ips of the created instances.
 
 ```
 ssh-add -k ~/.ssh/id_rsa
@@ -52,6 +52,7 @@ deb https://apt.kubernetes.io/ kubernetes-xenial main
 EOF
 
 apt-get update -y && apt-get install -y kubelet kubeadm kubectl
+
 apt-mark hold kubelet kubeadm kubectl
 ```
 
@@ -226,6 +227,7 @@ nc -vn 10.240.0.40 6443
 ```
 export CONTROL_PLANE="ubuntu@10.240.0.10"
 ssh ${CONTROL_PLANE}
+sudo -Es
 mkdir -p /etc/kubernetes/pki/etcd/
 ```
 
@@ -269,8 +271,11 @@ mkdir -p $HOME/.kube
 sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
 sudo chown $(id -u):$(id -g) $HOME/.kube/config
 
+
+// get certificate key
 kubeadm init phase upload-certs --upload-certs --config kubeadm-config.yaml
 
+// for control plan join command
 kubeadm token create --print-join-command --certificate-key cf7b996798e0f7972065a258c60dfbbcdbed4a1885ff847905a9bf7d9ffcb437
 
 
