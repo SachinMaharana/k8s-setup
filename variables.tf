@@ -54,13 +54,11 @@ variable "centos" {
 }
 
 
-
-
 variable "ssh_public_key_path" {
   default = "~/.ssh/id_rsa.pub"
 }
 
 
 variable "centos_enable" {
-  default = true
+  default = false
 }

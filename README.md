@@ -264,7 +264,7 @@ vim kubeadm-config.yaml
 apiVersion: kubeadm.k8s.io/v1beta2
 kind: ClusterConfiguration
 kubernetesVersion: stable
-controlPlaneEndpoint: "54.82.17.108:6443"
+controlPlaneEndpoint: "3.83.216.119:6443"
 networking:
         podSubnet: "192.168.0.0/16"
 etcd:
@@ -348,3 +348,8 @@ find / -name "whats.db"
 
 docker cp 788569c55bea:/snapshots.db snapshots.db
 ```
+
+
+
+kubeadm join 3.83.216.119:6443 --token zgxakn.mwjqdy339yqsh500 \
+    --discovery-token-ca-cert-hash sha256:efd41e862025bc51f52181086c243f9f086149cbfad12059b8f1a6acadc5c1b1
