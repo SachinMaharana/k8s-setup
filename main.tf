@@ -103,6 +103,14 @@ resource "aws_security_group_rule" "allow_http" {
   security_group_id = aws_security_group.kubernetes.id
   cidr_blocks       = [var.all_cidr]
 }
+resource "aws_security_group_rule" "allow_http_min" {
+  type              = "ingress"
+  from_port         = 9000
+  to_port           = 9000
+  protocol          = "tcp"
+  security_group_id = aws_security_group.kubernetes.id
+  cidr_blocks       = [var.all_cidr]
+}
 
 
 resource "aws_security_group_rule" "allow_k8s_https" {
@@ -192,6 +200,15 @@ resource "aws_instance" "worker" {
   tags = {
     Name = "worker-${count.index}"
   }
+  root_block_device {
+    delete_on_termination = true
+  }
+  ebs_block_device {
+    device_name           = "/dev/xvdb"
+    delete_on_termination = true
+    volume_size           = 30
+    volume_type           = "standard"
+  }
 }
 
 resource "aws_instance" "etcd" {
@@ -234,13 +251,13 @@ resource "local_file" "kube_inventory" {
   content = templatefile("${path.module}/kube.tpl", {
     list_master = slice(aws_instance.master.*.public_ip, 0, var.master_count),
     list_worker = slice(aws_instance.worker.*.public_ip, 0, var.worker_count)
-    list_etcd = slice(aws_instance.etcd.*.public_ip, 0, var.etcd_count)
-    list_lb = slice(aws_instance.lb.*.public_ip, 0, var.lb_count),
+    list_etcd   = slice(aws_instance.etcd.*.public_ip, 0, var.etcd_count)
+    list_lb     = slice(aws_instance.lb.*.public_ip, 0, var.lb_count),
 
     list_master_private = slice(aws_instance.master.*.private_ip, 0, var.master_count)
-    list_etcd_private = slice(aws_instance.etcd.*.private_ip, 0, var.etcd_count)
+    list_etcd_private   = slice(aws_instance.etcd.*.private_ip, 0, var.etcd_count)
     list_worker_private = slice(aws_instance.worker.*.private_ip, 0, var.worker_count)
-    list_lb_private = slice(aws_instance.lb.*.private_ip, 0, var.lb_count)
+    list_lb_private     = slice(aws_instance.lb.*.private_ip, 0, var.lb_count)
 
   })
   filename = "ips"

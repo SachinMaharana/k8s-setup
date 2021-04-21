@@ -1,33 +1,32 @@
 [masters]
 %{ for index,ip in list_master ~}
-${ip}
+master_${index} = ${ip}
 %{ endfor ~}
-
 %{ for index,ip in list_master_private ~}
-${ip} 
+master_${index}_p = "${ip}"
 %{ endfor ~}
 
 
 [workers]
 %{ for index,ip in list_worker ~}
-${ip}
-%{ endfor }
+worker_${index} = ${ip}
+%{ endfor ~}
 %{ for index,ip in list_worker_private ~}
-${ip}
+worker_${index}_p = ${ip}
 %{ endfor ~}
 
 [etcd]
 %{ for index,ip in list_etcd ~}
-${ip} 
-%{ endfor } 
+etcd_${index} = ${ip}
+%{ endfor ~} 
 %{ for index,ip in list_etcd_private ~}
-${ip}
+etcd_${index}_p = ${ip}
 %{ endfor ~}
 
 [lb]
 %{ for index,ip in list_lb ~}
-${ip} instance-${index}-public 
-%{ endfor } 
+lb_${index} = ${ip}
+%{ endfor ~} 
 %{ for index,ip in list_lb_private ~}
-${ip} instance-${index}-private 
+lb_${index}_p = ${ip}
 %{ endfor ~}

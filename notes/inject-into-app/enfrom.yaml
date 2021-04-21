@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    run: envfrom-secret
+  name: envfrom-secret
+spec:
+  containers:
+    - image: nginx
+      name: envfrom-secret
+      resources: {}
+      envFrom:
+        - secretRef:
+            name: test-secrets
+  dnsPolicy: ClusterFirst
+  restartPolicy: Always
+status: {}

@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    run: busybox
+  name: busybox
+spec:
+  containers:
+    - image: busybox:1.29
+      name: busybox
+      command: ["printenv"]
+      args: ["HOSTNAME", "KUBERNETES_PORT"]
+  dnsPolicy: ClusterFirst
+  restartPolicy: Never
+status: {}

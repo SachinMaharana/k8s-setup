@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: command
+  name: command
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: command
+  strategy: {}
+  template:
+    metadata:
+      labels:
+        app: command
+    spec:
+      containers:
+        - image: nginx:1.19
+          name: nginx
+          command: [printenv]
+          args: ["HOSTNAME", "KUBERNETES_PORT"]
+          resources: {}
+status: {}

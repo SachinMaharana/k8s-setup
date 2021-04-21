@@ -1,0 +1,15 @@
+session_name: 6-panes
+windows:
+  - window_name: dev window
+    layout: tiled
+    # shell_command_before:
+    # - /home/sachin/blackhole/k8s-world
+    panes:
+      - ssh -o "StrictHostKeyChecking no" -A ubuntu@54.146.33.12
+      - ssh -o "StrictHostKeyChecking no" -A ubuntu@54.91.154.219
+      - ssh -o "StrictHostKeyChecking no" -A ubuntu@54.225.15.72
+      - ssh -o "StrictHostKeyChecking no" -A ubuntu@3.84.76.229
+      - ssh -o "StrictHostKeyChecking no" -A ubuntu@184.73.91.247
+      - ssh -o "StrictHostKeyChecking no" -A ubuntu@54.221.101.77
+      - ssh -o "StrictHostKeyChecking no" -A ubuntu@3.81.186.66
+      - ssh -o "StrictHostKeyChecking no" -A ubuntu@54.161.127.227

@@ -1,0 +1,38 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  annotations:
+    build: two
+  labels:
+    run: downward
+  name: downward
+spec:
+  volumes:
+    - name: podinfo
+      downwardAPI:
+        items:
+          - path: "labels"
+            fieldRef:
+              fieldPath: metadata.labels
+          - path: "annotations"
+            fieldRef:
+              fieldPath: metadata.annotations
+  containers:
+    - image: nginx
+      name: downward
+      command: ["bash", "-c"]
+      args:
+      - while true; do
+          if [[ -e /etc/podinfo/labels ]]; then
+            echo -en '\n\n'; cat /etc/podinfo/labels; fi;
+          if [[ -e /etc/podinfo/annotations ]]; then
+            echo -en '\n\n'; cat /etc/podinfo/annotations; fi;
+          sleep 5;
+        done;
+      volumeMounts:
+        - name: podinfo
+          mountPath: /etc/podinfo
+      resources: {}
+  dnsPolicy: ClusterFirst
+  restartPolicy: Always
+status: {}

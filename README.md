@@ -1,10 +1,11 @@
-# Setup HA Kubernetes Cluster ( Stacked Cluster ) : 30 mins 
+# Setup HA Kubernetes Cluster ( Stacked Cluster ) : 30 mins
 
 For Centos Nodes, refer centos-README.md
 
 ---
 
 ## Add AWS Access and Secret Key in .envrc file.
+
 ```
 export AWS_ACCESS_KEY_ID=AKIARP7BIRQM6KWZ
 export AWS_SECRET_ACCESS_KEY=fmM7HcmtTDQB90eeAqy4NoFik6qliJwAJ3
@@ -24,8 +25,10 @@ ssh -A ubuntu@3.216.23.160
 ```
 
 ## On All Nodes( Master,ETCD, Worker )
+
 ```
 sudo su -
+
 apt-get update && apt-get install -y apt-transport-https ca-certificates curl software-properties-common
 
 
@@ -55,13 +58,31 @@ mkdir -p /etc/systemd/system/docker.service.d
 
 systemctl daemon-reload && systemctl restart docker
 
+systemctl status docker
 
 apt-get update -y
 curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
 
+
+lsmod | grep br_netfilter
+
+cat <<EOF | sudo tee /etc/modules-load.d/k8s.conf
+br_netfilter
+EOF
+
+cat <<EOF | sudo tee /etc/sysctl.d/k8s.conf
+net.bridge.bridge-nf-call-ip6tables = 1
+net.bridge.bridge-nf-call-iptables = 1
+EOF
+sudo sysctl --system
+
 cat <<EOF | tee /etc/apt/sources.list.d/kubernetes.list
 deb https://apt.kubernetes.io/ kubernetes-xenial main
 EOF
+
+curl -s https://packages.cloud.google.com/apt/dists/kubernetes-xenial/main/binary-amd64/Packages | grep Version | awk '{print $2}'
+
+apt-get update -y && apt-get install -y kubelet=1.16.9-00 kubeadm=1.16.9-00 kubectl=1.16.9-00
 
 apt-get update -y && apt-get install -y kubelet kubeadm kubectl
 
@@ -86,6 +107,7 @@ systemctl status kubelet
 ---
 As Root
 -------
+In HOST 0
 
 export HOST0=10.240.0.30
 export HOST1=10.240.0.31
@@ -155,10 +177,15 @@ find /tmp/${HOST2} -name ca.key -type f -delete
 find /tmp/${HOST1} -name ca.key -type f -delete
 
 
+
+export HOST0=10.240.0.30
+export HOST1=10.240.0.31
+export HOST2=10.240.0.32
+
 # etcd-2
 USER=ubuntu
 HOST=${HOST1}
-scp -r /tmp/${HOST}/* ${USER}@${HOST}:
+scp -r /tmp/${HOST}/* ${USER}@${HOST}:~/
 ssh ${USER}@${HOST}
 
 sudo -Es
@@ -203,6 +230,8 @@ docker run --rm -it \
 
 ```
 
+etcdctl --cert /etc/kubernetes/pki/etcd/peer.crt --key /etc/kubernetes/pki/etcd/peer.key --cacert /etc/kubernetes/pki/etcd/ca.crt --endpoints https://10.240.0.30:2379 endpoint health --cluster
+
 ## Loadbalancer
 
 ```
@@ -230,12 +259,15 @@ backend kubernetes-master-nodes
 
 systemctl restart haproxy && systemctl status haproxy
 
-nc -vn 10.240.0.40 6443
 ```
+
+nc -vz 10.240.0.40 6443
+nc -vn 10.240.0.40 6443
 
 ## Master nodes
 
 ### I'm on ETCD $HOST0
+
 ```
 export CONTROL_PLANE="ubuntu@10.240.0.10"
 ssh ${CONTROL_PLANE}
@@ -243,7 +275,8 @@ sudo -Es
 mkdir -p /etc/kubernetes/pki/etcd/
 ```
 
-### Exit ssh and copy files from $HOST0
+### Exit ssh and copy files from $HOST0 to Master0
+
 ```
 scp /etc/kubernetes/pki/etcd/ca.crt "${CONTROL_PLANE}":
 scp /etc/kubernetes/pki/apiserver-etcd-client.crt "${CONTROL_PLANE}":
@@ -251,6 +284,8 @@ scp /etc/kubernetes/pki/apiserver-etcd-client.key "${CONTROL_PLANE}":
 ```
 
 ---
+
+In Master 0
 
 ```
 cp ca.crt /etc/kubernetes/pki/etcd/ca.crt
@@ -261,10 +296,12 @@ cp apiserver-etcd-client.key /etc/kubernetes/pki/apiserver-etcd-client.key
 
 vim kubeadm-config.yaml
 
+// Chnage Endpoint Here
+
 apiVersion: kubeadm.k8s.io/v1beta2
 kind: ClusterConfiguration
 kubernetesVersion: stable
-controlPlaneEndpoint: "3.83.216.119:6443"
+controlPlaneEndpoint: "100.24.68.150:6443"
 networking:
         podSubnet: "192.168.0.0/16"
 etcd:
@@ -288,24 +325,29 @@ sudo chown $(id -u):$(id -g) $HOME/.kube/config
 kubeadm init phase upload-certs --upload-certs --config kubeadm-config.yaml
 
 // for control plan join command
-kubeadm token create --print-join-command --certificate-key cf7b996798e0f7972065a258c60dfbbcdbed4a1885ff847905a9bf7d9ffcb437
+kubeadm token create --print-join-command --certificate-key 7027ba81fc0c9fb874236345f03bd229349f26a243ce9317416ef0f2728c1060
 
 
 kubeadm join 54.82.17.108:6443 --token tdu5sw.7qltq4reytkaoi4r --discovery-token-ca-cert-hash sha256:a97ce8d321741674763713f819c16dea7ec71c2c13d423c140f1a2161f0837b6 --control-plane --certificate-key cf7b996798e0f7972065a258c60dfbbcdbed4a1885ff847905a9bf7d9ffcb437
-z
-```
----
 
+// for worker
+kubeadm token create --print-join-command
+```
+
+---
 
 ```
 kubectl apply -f https://docs.projectcalico.org/v3.15/manifests/calico.yaml
 
+kubeadm join 34.202.230.202:6443 --token v1foop.h3s5lkq8zgvr7wrn \
+    --discovery-token-ca-cert-hash sha256:5effcbe5511ab14a613f1450d576de7a96dae8050bf3116cb2ba007c94b16949
+
 kubectl create deploy nginx --image=nginx:1.10
 ```
 
-
 ---
 
+IN ETCD
 
 ```
 ETCDCTL_API=3 etcdctl --endpoints $ENDPOINT snapshot save snapshotdb
@@ -344,12 +386,9 @@ ETCDCTL_API=3 etcdctl --write-out=table snapshot status current.db \
   --cert=/etc/kubernetes/pki/etcd/server.crt \
   --key=/etc/kubernetes/pki/etcd/server.key
 
-find / -name "whats.db"
+find / -name "current.db"
 
 docker cp 788569c55bea:/snapshots.db snapshots.db
 ```
 
-
-
-kubeadm join 3.83.216.119:6443 --token zgxakn.mwjqdy339yqsh500 \
-    --discovery-token-ca-cert-hash sha256:efd41e862025bc51f52181086c243f9f086149cbfad12059b8f1a6acadc5c1b1
+apt-get install -y kubelet=1.18.18-00
